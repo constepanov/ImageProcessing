@@ -27,7 +27,6 @@ public class GaussianBlurFilter extends AbstractLinearFilter {
                 z += mask[i][j];
             }
         }
-        System.out.printf("Z = %f\n", z);
         return applyMask(src, mask, z);
     }
 }

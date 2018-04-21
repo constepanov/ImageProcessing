@@ -21,7 +21,6 @@ public class AveragingFilter extends AbstractLinearFilter {
                 z += mask[i][j];
             }
         }
-        System.out.printf("Z = %.0f\n", z);
         return applyMask(src, mask, z);
     }
 }

@@ -1,5 +1,6 @@
 package color;
 
+import filter.GaussianBlurFilter;
 import noise.AdditiveNoise;
 import noise.ImpulseNoise;
 import org.knowm.xchart.BitmapEncoder;
@@ -27,6 +28,16 @@ public class Util {
         } else {
             return (int) x;
         }
+    }
+
+    public static int[] flatten(int[][] array) {
+        int height = array.length;
+        int width = array[0].length;
+        int[] result = new int[height * width];
+        for (int i = 0; i < height; i++) {
+            System.arraycopy(array[i], 0, result, i * width, width);
+        }
+        return result;
     }
 
     public static double calculatePSNR(BufferedImage original, BufferedImage processed) {
@@ -88,11 +99,41 @@ public class Util {
                 psnr.add(calculatePSNR(input, imageWithNoise));
             }
             chart.addSeries(String.format("pa = %.1f", pa), probability, psnr);
-            try {
-                BitmapEncoder.saveBitmap(chart, "impulseNoise", BitmapEncoder.BitmapFormat.PNG);
-            } catch (IOException e) {
-                e.printStackTrace();
+        }
+        try {
+            BitmapEncoder.saveBitmap(chart, "impulseNoise", BitmapEncoder.BitmapFormat.PNG);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void buildChartForGaussianFilter(BufferedImage srcImage, BufferedImage noisyImage) {
+        XYChart chart = new XYChartBuilder()
+                .width(800)
+                .height(600)
+                .theme(Styler.ChartTheme.Matlab)
+                .xAxisTitle("σ")
+                .yAxisTitle("PSNR")
+                .build();
+        chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNE);
+        chart.getStyler().setHasAnnotations(false);
+        int[] radii = {2, 3, 4, 5};
+        for (int r : radii) {
+            List<Double> sigmaValues = new ArrayList<>();
+            List<Double> psnrValues = new ArrayList<>();
+            for (int s = 1; s < 16; s++) {
+                GaussianBlurFilter gaussianBlurFilter = new GaussianBlurFilter(s, r);
+                BufferedImage filtered = gaussianBlurFilter.process(noisyImage);
+                double psnr = calculatePSNR(srcImage, filtered);
+                psnrValues.add(psnr);
+                sigmaValues.add((double) s);
             }
+            chart.addSeries("R = " + r, sigmaValues, psnrValues);
+        }
+        try {
+            BitmapEncoder.saveBitmap(chart, "gaussianFilter", BitmapEncoder.BitmapFormat.PNG);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

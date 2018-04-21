@@ -1,6 +1,7 @@
 import color.ColorConverter;
 import filter.AveragingFilter;
 import filter.GaussianBlurFilter;
+import filter.MedianFilter;
 import noise.AdditiveNoise;
 import noise.ImageNoise;
 import noise.ImpulseNoise;
@@ -9,41 +10,64 @@ import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 
-import static color.Util.buildChartForAdditiveNoise;
-import static color.Util.buildChartForImpulseNoise;
-import static color.Util.calculatePSNR;
+import static color.Util.*;
 
 public class Main {
 
     public static void main(String[] args) throws IOException {
         File input = new File("lena.bmp");
-        BufferedImage inputImage = ImageIO.read(input);
-        inputImage = ColorConverter.fromRGBToYYY(inputImage);
-        ImageIO.write(inputImage, "bmp", new File("lenaY.bmp"));
+        BufferedImage image = ImageIO.read(input);
+        image = ColorConverter.fromRGBToYYY(image);
+        ImageIO.write(image, "bmp", new File("lenaY.bmp"));
+        //imageProcessingWithGaussianNoise(image);
+        imageProcessingWithImpulseNoise(image);
 
-        ImageNoise additiveNoise = new AdditiveNoise(10);
-        BufferedImage imageWithAdditiveNoise = additiveNoise.processImage(inputImage);
-        double psnr = calculatePSNR(inputImage, imageWithAdditiveNoise);
+        //buildChartForAdditiveNoise(inputImage);
+        //buildChartForImpulseNoise(inputImage);
+    }
+
+    private static void imageProcessingWithGaussianNoise(BufferedImage image) throws IOException {
+        System.out.println("IMAGE PROCESSING WITH ADDITIVE NOISE");
+
+        ImageNoise additiveNoise = new AdditiveNoise(7);
+        BufferedImage imageWithAdditiveNoise = additiveNoise.processImage(image);
+        double psnr = calculatePSNR(image, imageWithAdditiveNoise);
         System.out.printf("PSNR for noisy image: %f\n", psnr);
         ImageIO.write(imageWithAdditiveNoise, "bmp", new File("lenaAN.bmp"));
 
-        AveragingFilter averagingFilter = new AveragingFilter(6);
+        AveragingFilter averagingFilter = new AveragingFilter(10);
         BufferedImage filtered = averagingFilter.process(imageWithAdditiveNoise);
-        psnr = calculatePSNR(inputImage, filtered);
+        psnr = calculatePSNR(image, filtered);
         System.out.printf("PSNR after averaging filter: %f\n", psnr);
         ImageIO.write(filtered, "bmp", new File("lenaAveragingFilter.bmp"));
 
-        GaussianBlurFilter gaussianBlurFilter = new GaussianBlurFilter(10, 3);
+        GaussianBlurFilter gaussianBlurFilter = new GaussianBlurFilter(2, 3);
         filtered = gaussianBlurFilter.process(imageWithAdditiveNoise);
-        psnr = calculatePSNR(inputImage, filtered);
+        psnr = calculatePSNR(image, filtered);
         System.out.printf("PSNR after gaussian filter: %f\n", psnr);
         ImageIO.write(filtered, "bmp", new File("lenaGaussianFilter.bmp"));
 
-        ImageNoise impulseNoise = new ImpulseNoise(0.1, 0.1);
-        BufferedImage imageWithImpulseNoise = impulseNoise.processImage(inputImage);
+        MedianFilter medianFilter = new MedianFilter(5);
+        filtered = medianFilter.process(imageWithAdditiveNoise);
+        psnr = calculatePSNR(image, filtered);
+        System.out.printf("PSNR after median filter: %f\n", psnr);
+        ImageIO.write(filtered, "bmp", new File("lenaMedianFilter.bmp"));
+        //buildChartForGaussianFilter(image, imageWithAdditiveNoise);
+    }
+
+    private static void imageProcessingWithImpulseNoise(BufferedImage image) throws IOException {
+        System.out.println("IMAGE PROCESSING WITH IMPULSE NOISE");
+
+        ImageNoise impulseNoise = new ImpulseNoise(0.25, 0.25);
+        BufferedImage imageWithImpulseNoise = impulseNoise.processImage(image);
+        double psnr = calculatePSNR(image, imageWithImpulseNoise);
+        System.out.printf("PSNR for noisy image: %f\n", psnr);
         ImageIO.write(imageWithImpulseNoise, "bmp", new File("lenaIN.bmp"));
 
-        buildChartForAdditiveNoise(inputImage);
-        buildChartForImpulseNoise(inputImage);
+        MedianFilter medianFilter = new MedianFilter(4);
+        BufferedImage filtered = medianFilter.process(imageWithImpulseNoise);
+        psnr = calculatePSNR(image, filtered);
+        System.out.printf("PSNR after median filter: %f\n", psnr);
+        ImageIO.write(filtered, "bmp", new File("lenaMedian.bmp"));
     }
 }

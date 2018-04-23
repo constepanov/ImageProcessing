@@ -40,4 +40,15 @@ public class Util {
         }
         return 10 * log10((width * height * pow(255, 2)) / sum);
     }
+
+    public static double averageLuma(BufferedImage src) {
+        int width = src.getWidth();
+        int height = src.getHeight();
+        double sum = 0;
+        byte[] srcData = ((DataBufferByte) src.getRaster().getDataBuffer()).getData();
+        for (int i = 0; i < width * height; i++) {
+            sum += Byte.toUnsignedInt(srcData[i * 3]);
+        }
+        return sum / (width * height);
+    }
 }

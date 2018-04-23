@@ -1,7 +1,6 @@
+import chart.ChartBuilder;
 import color.ColorConverter;
-import filter.AveragingFilter;
-import filter.GaussianBlurFilter;
-import filter.MedianFilter;
+import filter.*;
 import noise.AdditiveNoise;
 import noise.ImageNoise;
 import noise.ImpulseNoise;
@@ -17,13 +16,29 @@ public class Main {
     public static void main(String[] args) throws IOException {
         File input = new File("lena.bmp");
         BufferedImage image = ImageIO.read(input);
-        image = ColorConverter.fromRGBToYYY(image);
-        ImageIO.write(image, "bmp", new File("lenaY.bmp"));
-        imageProcessingWithGaussianNoise(image);
-        imageProcessingWithImpulseNoise(image);
+        BufferedImage grayScaleImage = ColorConverter.fromRGBToYYY(image);
+        ImageIO.write(grayScaleImage, "bmp", new File("lenaGrayScale.bmp"));
+        ChartBuilder.buildChartForAdditiveNoise(grayScaleImage);
+        ChartBuilder.buildChartForImpulseNoise(grayScaleImage);
+        imageProcessingWithGaussianNoise(grayScaleImage);
+        imageProcessingWithImpulseNoise(grayScaleImage);
+        laplacian(grayScaleImage);
+    }
 
-        //ChartBuilder.buildChartForAdditiveNoise(inputImage);
-        //ChartBuilder.buildChartForImpulseNoise(inputImage);
+    private static void laplacian(BufferedImage image) throws IOException {
+        final String outputPath = System.getProperty("user.dir") +
+                File.separator + "laplacian" + File.separator;
+        System.out.println("LAPLACE OPERATOR");
+        for (double alpha = 1; alpha <= 1.6; alpha += 0.1) {
+            System.out.printf("α = %.1f\n", alpha);
+            LaplacianFilter laplacianFilter = new LaplacianFilter(ConvolutionMask.highBoostMask(alpha));
+            BufferedImage filtered = laplacianFilter.process(image);
+            String fileName = String.format(outputPath + "highBoost(α = %.1f).bmp", alpha);
+            ImageIO.write(filtered, "bmp", new File(fileName));
+            System.out.printf("Average luma = %f\n", averageLuma(filtered));
+            ChartBuilder.histogramImage(filtered, alpha);
+        }
+        ChartBuilder.histogramImage(image, 0);
     }
 
     private static void imageProcessingWithGaussianNoise(BufferedImage image) throws IOException {
@@ -32,14 +47,14 @@ public class Main {
         new File(outputPath).mkdir();
         System.out.println("IMAGE PROCESSING WITH ADDITIVE NOISE");
 
-        ImageNoise additiveNoise = new AdditiveNoise(7);
+        ImageNoise additiveNoise = new AdditiveNoise(5);
         BufferedImage imageWithAdditiveNoise = additiveNoise.processImage(image);
         double psnr = calculatePSNR(image, imageWithAdditiveNoise);
         System.out.printf("PSNR for noisy image: %f\n", psnr);
         ImageIO.write(imageWithAdditiveNoise, "bmp",
                 new File(outputPath + "noisyImage.bmp"));
 
-        AveragingFilter averagingFilter = new AveragingFilter(10);
+        AveragingFilter averagingFilter = new AveragingFilter(3);
         BufferedImage filtered = averagingFilter.process(imageWithAdditiveNoise);
         psnr = calculatePSNR(image, filtered);
         System.out.printf("PSNR after averaging filter: %f\n", psnr);
@@ -53,7 +68,7 @@ public class Main {
         ImageIO.write(filtered, "bmp",
                 new File(outputPath + "gaussianFilter.bmp"));
 
-        MedianFilter medianFilter = new MedianFilter(5);
+        MedianFilter medianFilter = new MedianFilter(4);
         filtered = medianFilter.process(imageWithAdditiveNoise);
         psnr = calculatePSNR(image, filtered);
         System.out.printf("PSNR after median filter: %f\n", psnr);
@@ -70,7 +85,7 @@ public class Main {
 
         double[] pa = {0.025, 0.05, 0.125, 0.25};
         double[] pb = {0.025, 0.05, 0.125, 0.25};
-        int[] radii = {1, 2, 2, 4};
+        int[] radii = {1, 2, 2, 3};
 
         BufferedImage[] noisyImages = new BufferedImage[4];
         int[] percentages = new int[4];

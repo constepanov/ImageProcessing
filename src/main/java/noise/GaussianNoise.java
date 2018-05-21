@@ -6,11 +6,11 @@ import java.util.Random;
 
 import static color.Util.clip;
 
-public class AdditiveNoise implements ImageNoise {
+public class GaussianNoise implements ImageNoise {
 
     private double sigma;
 
-    public AdditiveNoise(double sigma) {
+    public GaussianNoise(double sigma) {
         this.sigma = sigma;
     }
 
